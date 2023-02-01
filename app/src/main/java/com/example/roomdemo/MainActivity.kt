@@ -4,15 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +17,10 @@ import androidx.compose.ui.unit.sp
 import com.example.roomdemo.ui.theme.RoomDemoTheme
 import android.app.Application
 import android.app.appsearch.SearchResults
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.compose.ui.platform.LocalContext
@@ -32,6 +28,7 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,7 +77,91 @@ fun MainScreen(
     searchResults: List<Product>,
     viewModel: MainViewModel
 ) {
+    var productName by remember { mutableStateOf("") }
+    var productQuantity by remember { mutableStateOf("") }
+    var searching by remember { mutableStateOf(false) }
 
+    val onProductTextChange = { text: String ->
+        productName = text
+    }
+
+    val onQuantityTextChange = { text: String ->
+        productQuantity = text
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+    ) {
+        CustomTextField(
+            title = "Product Name",
+            textState = productName,
+            onTextChange = onProductTextChange,
+            keyboardType = KeyboardType.Text
+        )
+        CustomTextField(
+            title = "Quantity",
+            textState = productQuantity,
+            onTextChange = onQuantityTextChange,
+            keyboardType = KeyboardType.Number
+        )
+        
+        Row(
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp)
+        ) {
+            Button(
+                onClick = { 
+                    if (productQuantity.isNotEmpty()) {
+                        viewModel.insertProduct(
+                            Product(
+                                productName,
+                                productQuantity.toInt()
+                            )
+                        )
+                        searching = false
+                    }
+                }
+            ) {
+                Text(text = "Add")
+            }
+            Button(onClick = { 
+                searching = true
+                viewModel.findProduct(productName)
+            }) {
+                Text(text = "Search")
+            }
+            Button(onClick = { 
+                searching = false
+                viewModel.deleteProduct(productName)
+            }) {
+                Text(text = "Delete")
+            }
+            Button(onClick = { 
+                searching = false
+                productName = ""
+                productQuantity = ""
+            }) {
+                Text(text = "Clear")
+            }
+        }
+        LazyColumn(
+            Modifier
+                .fillMaxWidth()
+                .padding(10.dp)
+        ) {
+            val list = if (searching) searchResults else allProducts
+            item { 
+                TitleRow(head1 = "ID", head2 = "Product", head3 = "Quantity")
+            }
+            items(list) { item: Product ->  
+                ProductRow(id = item.id, name = item.productName, quantity = item.quantity)
+            }
+        }
+    }
 }
 
 @Composable
