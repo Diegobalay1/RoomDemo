@@ -23,7 +23,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.roomdemo.ui.theme.RoomDemoTheme
-import kotlin.math.sin
+import android.app.Application
+import android.app.appsearch.SearchResults
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +43,18 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    ScreenSetup()
+                    //ScreenSetup()
+                    val owner = LocalViewModelStoreOwner.current
+                    owner?.let {
+                        val viewModel: MainViewModel = viewModel(
+                            it,
+                            "MainViewModel",
+                            MainViewModelFactory(
+                                LocalContext.current.applicationContext as Application
+                            )
+                        )
+                        ScreenSetup(viewModel)
+                    }
                 }
             }
         }
@@ -43,12 +62,24 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ScreenSetup() {
-    MainScreen()
+fun ScreenSetup(viewModel: MainViewModel) {
+
+    val allProducts by viewModel.allProducts.observeAsState(listOf())
+    val searchResults by viewModel.searchResults.observeAsState(listOf())
+
+    MainScreen(
+        allProducts = allProducts,
+        searchResults = searchResults,
+        viewModel = viewModel
+    )
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    allProducts: List<Product>,
+    searchResults: List<Product>,
+    viewModel: MainViewModel
+) {
 
 }
 
@@ -113,11 +144,12 @@ fun CustomTextField(
     )
 }
 
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    RoomDemoTheme {
-        ScreenSetup()
+
+
+class MainViewModelFactory(val application: Application) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T: ViewModel> create(modelClass: Class<T>): T {
+        return MainViewModel(application) as T
     }
 }
 
